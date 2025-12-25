@@ -1,0 +1,136 @@
+currentPath = pwd;
+addpath(currentPath+"\AuxiliaryFunc");
+%% ComBine Reinforcement
+clear;
+close all;
+tic
+%% ---------------- Materials
+[SteelAlloy1020,AlumiuumAlloy110,Oak,GRERokhlin2011,Steel,Tungsten,Tai,Graphite0,GRERokhlin2011_90,Graphepoxy]=LoadDefualMaterial;                                  %Load Materials
+Me1=SteelAlloy1020;Me2=AlumiuumAlloy110;Me3=Oak;Me4=GRERokhlin2011;Me5=Steel;
+Me6=Tungsten;Me7=Tai;Me8=Graphite0;Me9=GRERokhlin2011_90; 
+Me10=Graphepoxy;
+
+%% Basci parameters
+N=30;
+Frequency=0.25e6;
+Cons=0;
+Mode_N = 15; %这里需要提前计算所有类型处的导波模式解，以确定矩阵的最大大小
+
+PkPhiy=0;
+MaxLayers=100;
+
+%% -γγγγγγγγγγγγγγγγγγγγγγγγγγγγγγγγγγγγγ-
+% P1
+Layers_1={Me1,Me1,Me1,Me1};                                                                                                                         
+Ang_1=[0,0,0,0];
+H_1=[0.001,0.001,0.001,0.001]; 
+
+GetPart_M_1=0.4;
+% P7
+Layers_7={Me1,Me1};
+Ang_7=[0,0];  
+H_7=[0.001,0.001];
+Plate_Len = 2.004;
+
+GetPart_M_7=0.4;
+% P2
+Theta = 0.25*pi;
+Rr=0.5;
+Layers_2={Me1,Me1};
+Ang_2=[0,0];  
+H_2=[0.001,0.001];
+
+GetPart_M_2=0.4;
+%%-----TogeLayers Fir To End
+TogeLayers_U=[1,2];
+% The γ
+[S11,S12,S13,S21,S22,S23,S31,S32,S33,...
+    E_diag_2_Gama,E_diag_7_Gama,Scater127] = getGamaRawScatterAndE27(N,Frequency,Mode_N,Cons,PkPhiy,MaxLayers,Plate_Len,...
+    Layers_1,Ang_1,H_1,GetPart_M_1,...
+    Layers_7,Ang_7,H_7,GetPart_M_7,Theta,...
+    Layers_2,Ang_2,H_2,GetPart_M_2,Rr,...
+    TogeLayers_U);
+
+%% full fullfullfullfullfullfull_2-3
+% P3
+Layer_3={Me1,Me1};                                                         
+Ang_3=[0,0];                                                               
+H_3=[0.001,0.001];
+Plate_Len_3 = 0.001;
+
+Cut_3=0.4;
+% % P2
+% Theta = 0.25*pi;
+% Rr=0.5;      
+% Layer_2={Me4,Me4};                                                        
+% Ang_2=[0,90];                                                               
+% H_2=[0.001,0.001];
+
+% Cut_2=0.5;
+
+[S11_,S12_,S21_,S22_,E_diag_3_Full23,E_diag_2_Full23,Scater23] = getFullRawScatterAndE23(N,Frequency,Mode_N,Cons,PkPhiy,MaxLayers,...
+    Layer_3,Ang_3,H_3,Cut_3,....
+    Rr,Layers_2,Ang_2,H_2,GetPart_M_2,Theta,Plate_Len_3);
+
+%% full fullfullfullfullfullfull_3-4
+% P4
+Theta = 1*pi;
+Rr=0.5;
+Layer_4={Me1,Me1};                                                        
+Ang_4=[0,0];                                                               
+H_4=[0.001,0.001];
+
+Cut_4=0.4;
+[Z11,Z12,Z21,Z22,E_diag_4_Full34,E_diag_3_Full34,Scater34] = getFullRawScatterAndE34(N,Frequency,Mode_N,Cons,PkPhiy,MaxLayers,...
+    Layer_3,Ang_3,H_3,Cut_3,....
+    Rr,Layer_4,Ang_4,H_4,Cut_4,Theta,Plate_Len_3);
+
+%% ---------Full Scatter
+Zero_martrix = zeros(Mode_N,Mode_N);
+One_martrix = diag((1:Mode_N)./(1:Mode_N));
+
+% Note:All the first index of E is Ki_Bpc,2th is Ki_Fpc; and the same index in E is Same Martrix because the same parameterts 
+Z_a = [E_diag_3_Full34{1} Zero_martrix ;Zero_martrix E_diag_3_Full34{2}];
+Z_b = [Z11 Zero_martrix;Zero_martrix Z11];
+Z_c = [Z12 Zero_martrix;Zero_martrix Z12];
+
+Z_d = [One_martrix -E_diag_4_Full34{1}*Z22;-E_diag_4_Full34{2}*Z22 One_martrix];
+Z_e = [Zero_martrix E_diag_4_Full34{1}*Z21;E_diag_4_Full34{2}*Z21 Zero_martrix];
+Z_f = [E_diag_3_Full23{1} Zero_martrix ;Zero_martrix E_diag_3_Full23{1}];
+
+Z_all =Z_a*(Z_b+Z_c*Z_d*Z_e)*Z_f; 
+Z_all_FinSactter = abs(Z_all).^2;
+
+line_fir = 1:Mode_N;line_sec = Mode_N+1:2*Mode_N;
+Z_11 = Z_all(line_fir,line_fir);
+Z_12 = Z_all(line_fir,line_sec);
+Z_21 = Z_all(line_sec,line_fir);
+Z_22 = Z_all(line_sec,line_sec);
+
+%Combine P
+Pa = [E_diag_2_Full23{1} Zero_martrix;Zero_martrix E_diag_2_Full23{1}];
+Pb = [S11_ Zero_martrix;Zero_martrix S11_];
+Pc = [(One_martrix-Z_11*S22_) -Z_12*S22_;-Z_21*S22_ (One_martrix-Z_22*S22_)];
+Pd = [Z_11*S21_ Z_12*S21_;Z_21*S21_ Z_22*S21_];
+Pe = Pa;
+
+Pall = Pa*(Pb+pinv(Pc)*Pd)*Pe;
+P_all_FinSactter = abs(Pall).^2;
+
+P11 = Pall(line_fir,line_fir);
+P12 = Pall(line_fir,line_sec);
+P21 = Pall(line_sec,line_fir);
+P22 = Pall(line_sec,line_sec);
+
+%_Cal Final Scastter
+A = [S11 Zero_martrix;Zero_martrix S11];
+B = ([S13 Zero_martrix;Zero_martrix S13]) * pinv([One_martrix -S33*E_diag_7_Gama{1};-S33*E_diag_7_Gama{1} One_martrix]) * ([Zero_martrix S31;S31 Zero_martrix]);
+C = ([S12 Zero_martrix;Zero_martrix S12]) + [S13 Zero_martrix;Zero_martrix S13] * pinv([One_martrix -S33*E_diag_7_Gama{1};-S33*E_diag_7_Gama{1} One_martrix]) * [Zero_martrix S31;S31 Zero_martrix];
+
+D = [-P11*S22+One_martrix -P12*S22;-P21*S22 -P22*S22];
+E = [-P11*S23 -P12*S23;-P21*S23 -P22*S23] * pinv([One_martrix -S33*E_diag_7_Gama{1};-S33*E_diag_7_Gama{1} One_martrix]) * [Zero_martrix S32;S32 Zero_martrix];
+F = [P11*S21 P12*S21;P21*S21 P22*S21];
+G = [P11*S23 P12*S23;S21*S23 P22*S23] * pinv([One_martrix -S33*E_diag_7_Gama{1};-S33*E_diag_7_Gama{1} One_martrix]) * ([Zero_martrix S31;S31 Zero_martrix]);
+
+ReinforcementScaterr = (A+B+C)*pinv(D+E)*(F+G);
+ReinforcementScaterr = abs(ReinforcementScaterr).^2;

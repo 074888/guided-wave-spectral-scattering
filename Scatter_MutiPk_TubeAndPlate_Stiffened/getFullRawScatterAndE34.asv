@@ -1,0 +1,405 @@
+function[S11_,S12_,S21_,S22_,E_diag_R,E_diag_L,Fin_Rcatter] = getFullRawScatterAndE34(N,Frequency_Input,Mode_N,Cons,PkPhiy,MaxLayers,...
+    Layer_L,Ang_L,H_L,Cut_L,....
+    Rr,Layer_R,Ang_R,H_R,Cut_R,Theta,Plate_Len)
+%---------------*===============*  
+%--------------- ===============*    
+%--------------- ===============*         
+%   L Plate      R Tube           *    Muti layer
+%--------------- ===============*
+%----------------===============*
+%% （1）Set Global Parameter 
+%Frequency_Input=0.7e6;
+% N=30;
+% Cons=0;
+% 
+% PkPhiy=0;
+% MaxLayers=100;
+%% （2）Muti Para Plate
+% Layer_L={Me9,Me9};                                                         
+% Ang_L=[0,0];                                                               
+% H_L=[0.001,0.001];
+
+Line_L=length(H_L);
+% Cut_L=0.4;
+%% （3）SFew Para Tube
+% Rr=0.5;
+% Layer_R={Me9,Me9};                                                        
+% Ang_R=[0,0];                                                               
+% H_R=[0.001,0.001];
+
+Line_R=length(H_R);
+% Cut_R=0.5;
+
+%% Get MutiLayers
+[Ki_Fp_L,Ki_Bp_L,Ki_Fc_L,Ki_Bc_L,Vis_Fp_U_L,Vis_Fp_V_L,Vis_Fp_W_L,Vis_Bp_U_L,Vis_Bp_V_L,Vis_Bp_W_L,Vis_Bc_U_L,Vis_Bc_V_L,Vis_Bc_W_L,Vis_Fc_U_L,Vis_Fc_V_L,Vis_Fc_W_L...
+    ,Force_Bp_xx_L,~,~,~,Force_Bp_xz_L,Force_Bp_xy_L...
+    ,Force_Fp_xx_L,~,~,~,Force_Fp_xz_L,Force_Fp_xy_L...
+    ,Force_Fc_xx_L,~,~,~,Force_Fc_xz_L,Force_Fc_xy_L...
+    ,Force_Bc_xx_L,~,~,~,Force_Bc_xz_L,Force_Bc_xy_L]=Get_AcousticField_ByMutiLayer(MaxLayers,N,Cons,Frequency_Input,Layer_L,Ang_L,PkPhiy,H_L,Cut_L);
+%% Get MutiLayer Tube
+[Ki_Fp_R,Ki_Bp_R,Ki_Fc_R,Ki_Bc_R,Vis_Fp_U_R,Vis_Fp_V_R,Vis_Fp_W_R,Vis_Bp_U_R,Vis_Bp_V_R,Vis_Bp_W_R,Vis_Bc_U_R,Vis_Bc_V_R,Vis_Bc_W_R,Vis_Fc_U_R,Vis_Fc_V_R,Vis_Fc_W_R...
+    ,Force_Bp_xx_R,~,~,~,Force_Bp_xz_R,Force_Bp_xy_R...
+    ,Force_Fp_xx_R,~,~,~,Force_Fp_xz_R,Force_Fp_xy_R...
+    ,Force_Fc_xx_R,~,~,~,Force_Fc_xz_R,Force_Fc_xy_R...
+    ,Force_Bc_xx_R,~,~,~,Force_Bc_xz_R,Force_Bc_xy_R]=Get_AcousticField_ByMutiLayer_Tube(MaxLayers,N,Rr,Cons,Frequency_Input,Layer_R,Ang_R,H_R,Cut_R);  
+
+%% GetAll Ori-Acoustic Field
+%Normalizations-JAll:MutiLayers
+[~,JAll_Fp_L]=Normalize_M(Line_L,N,H_L,Vis_Fp_U_L,Vis_Fp_V_L,Vis_Fp_W_L,Force_Fp_xx_L,Force_Fp_xy_L,Force_Fp_xz_L);
+[~,JAll_Bp_L]=Normalize_M(Line_L,N,H_L,Vis_Bp_U_L,Vis_Bp_V_L,Vis_Bp_W_L,Force_Bp_xx_L,Force_Bp_xy_L,Force_Bp_xz_L);
+
+[~,JAll_Fc_L]=Normalize_M(Line_L,N,H_L,Vis_Fc_U_L,Vis_Fc_V_L,Vis_Fc_W_L,Force_Fc_xx_L,Force_Fc_xy_L,Force_Fc_xz_L);
+[~,JAll_Bc_L]=Normalize_M(Line_L,N,H_L,Vis_Bc_U_L,Vis_Bc_V_L,Vis_Bc_W_L,Force_Bc_xx_L,Force_Bc_xy_L,Force_Bc_xz_L);
+
+%----------------------------------------------------------------------------------------------------------------
+[~,JAll_Fp_R]=Normalize_M(Line_R,N,H_R,Vis_Fp_U_R,Vis_Fp_V_R,Vis_Fp_W_R,Force_Fp_xx_R,Force_Fp_xy_R,Force_Fp_xz_R);
+[~,JAll_Bp_R]=Normalize_M(Line_R,N,H_R,Vis_Bp_U_R,Vis_Bp_V_R,Vis_Bp_W_R,Force_Bp_xx_R,Force_Bp_xy_R,Force_Bp_xz_R);
+
+[~,JAll_Fc_R]=Normalize_M(Line_R,N,H_R,Vis_Fc_U_R,Vis_Fc_V_R,Vis_Fc_W_R,Force_Fc_xx_R,Force_Fc_xy_R,Force_Fc_xz_R);
+[~,JAll_Bc_R]=Normalize_M(Line_R,N,H_R,Vis_Bc_U_R,Vis_Bc_V_R,Vis_Bc_W_R,Force_Bc_xx_R,Force_Bc_xy_R,Force_Bc_xz_R);
+%% Nomalize Acoustic Field-ByJAll-[M-S]
+%4 Muti;
+[Vis_Fp_U_L,Vis_Fp_V_L,Vis_Fp_W_L,Force_Fp_xx_L,Force_Fp_xy_L,Force_Fp_xz_L]=NormalizeFiled(JAll_Fp_L,Vis_Fp_U_L,Vis_Fp_V_L,Vis_Fp_W_L,Force_Fp_xx_L,Force_Fp_xy_L,Force_Fp_xz_L);
+[Vis_Bp_U_L,Vis_Bp_V_L,Vis_Bp_W_L,Force_Bp_xx_L,Force_Bp_xy_L,Force_Bp_xz_L]=NormalizeFiled(JAll_Bp_L,Vis_Bp_U_L,Vis_Bp_V_L,Vis_Bp_W_L,Force_Bp_xx_L,Force_Bp_xy_L,Force_Bp_xz_L);
+
+[Vis_Fc_U_L,Vis_Fc_V_L,Vis_Fc_W_L,Force_Fc_xx_L,Force_Fc_xy_L,Force_Fc_xz_L]=NormalizeFiled(JAll_Fc_L,Vis_Fc_U_L,Vis_Fc_V_L,Vis_Fc_W_L,Force_Fc_xx_L,Force_Fc_xy_L,Force_Fc_xz_L);
+[Vis_Bc_U_L,Vis_Bc_V_L,Vis_Bc_W_L,Force_Bc_xx_L,Force_Bc_xy_L,Force_Bc_xz_L]=NormalizeFiled(JAll_Bc_L,Vis_Bc_U_L,Vis_Bc_V_L,Vis_Bc_W_L,Force_Bc_xx_L,Force_Bc_xy_L,Force_Bc_xz_L);
+%---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+%4 Single;-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[Vis_Fp_U_R,Vis_Fp_V_R,Vis_Fp_W_R,Force_Fp_xx_R,Force_Fp_xy_R,Force_Fp_xz_R]=NormalizeFiled(JAll_Fp_R,Vis_Fp_U_R,Vis_Fp_V_R,Vis_Fp_W_R,Force_Fp_xx_R,Force_Fp_xy_R,Force_Fp_xz_R);
+[Vis_Bp_U_R,Vis_Bp_V_R,Vis_Bp_W_R,Force_Bp_xx_R,Force_Bp_xy_R,Force_Bp_xz_R]=NormalizeFiled(JAll_Bp_R,Vis_Bp_U_R,Vis_Bp_V_R,Vis_Bp_W_R,Force_Bp_xx_R,Force_Bp_xy_R,Force_Bp_xz_R);
+
+[Vis_Fc_U_R,Vis_Fc_V_R,Vis_Fc_W_R,Force_Fc_xx_R,Force_Fc_xy_R,Force_Fc_xz_R]=NormalizeFiled(JAll_Fc_R,Vis_Fc_U_R,Vis_Fc_V_R,Vis_Fc_W_R,Force_Fc_xx_R,Force_Fc_xy_R,Force_Fc_xz_R);
+[Vis_Bc_U_R,Vis_Bc_V_R,Vis_Bc_W_R,Force_Bc_xx_R,Force_Bc_xy_R,Force_Bc_xz_R]=NormalizeFiled(JAll_Bc_R,Vis_Bc_U_R,Vis_Bc_V_R,Vis_Bc_W_R,Force_Bc_xx_R,Force_Bc_xy_R,Force_Bc_xz_R);
+%---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+%% Get All Normalize Acous Field;
+% Fp_Lode_L=length(Ki_Fp_L);
+% Fc_Lode_L=length(Ki_Fc_L);
+% 
+% Bp_Lode_L=length(Ki_Bp_L);
+% Bc_Lode_L=length(Ki_Bc_L);
+% %------------------------
+% Fp_Lode_R=length(Ki_Fp_R);
+% Fc_Lode_R=length(Ki_Fc_R);
+% 
+% Bp_Lode_R=length(Ki_Bp_R);
+% Bc_Lode_R=length(Ki_Bc_R);
+%% Combine Acoustic field
+Vis_Fpc_U_L=[Vis_Fp_U_L Vis_Fc_U_L];
+Vis_Fpc_V_L=[Vis_Fp_V_L Vis_Fc_V_L];
+Vis_Fpc_W_L=[Vis_Fp_W_L Vis_Fc_W_L];
+
+Vis_Bpc_U_L=[Vis_Bp_U_L Vis_Bc_U_L];
+Vis_Bpc_V_L=[Vis_Bp_V_L Vis_Bc_V_L];
+Vis_Bpc_W_L=[Vis_Bp_W_L Vis_Bc_W_L];
+
+Force_Fpc_xx_L=[Force_Fp_xx_L Force_Fc_xx_L];
+Force_Fpc_xy_L=[Force_Fp_xy_L Force_Fc_xy_L];
+Force_Fpc_xz_L=[Force_Fp_xz_L Force_Fc_xz_L];
+
+Force_Bpc_xx_L=[Force_Bp_xx_L Force_Bc_xx_L];
+Force_Bpc_xy_L=[Force_Bp_xy_L Force_Bc_xy_L];
+Force_Bpc_xz_L=[Force_Bp_xz_L Force_Bc_xz_L];
+%--------------------------------------------------------------------------
+Vis_Fpc_U_R=[Vis_Fp_U_R Vis_Fc_U_R];
+Vis_Fpc_V_R=[Vis_Fp_V_R Vis_Fc_V_R];
+Vis_Fpc_W_R=[Vis_Fp_W_R Vis_Fc_W_R];
+
+Vis_Bpc_U_R=[Vis_Bp_U_R Vis_Bc_U_R];
+Vis_Bpc_V_R=[Vis_Bp_V_R Vis_Bc_V_R];
+Vis_Bpc_W_R=[Vis_Bp_W_R Vis_Bc_W_R];
+
+Force_Fpc_xx_R=[Force_Fp_xx_R Force_Fc_xx_R];
+Force_Fpc_xy_R=[Force_Fp_xy_R Force_Fc_xy_R];
+Force_Fpc_xz_R=[Force_Fp_xz_R Force_Fc_xz_R];
+
+Force_Bpc_xx_R=[Force_Bp_xx_R Force_Bc_xx_R];
+Force_Bpc_xy_R=[Force_Bp_xy_R Force_Bc_xy_R];
+Force_Bpc_xz_R=[Force_Bp_xz_R Force_Bc_xz_R];
+
+
+%% Max Single Layer Mode
+% Mode_N_R=min(Fp_Lode_R+Fc_Lode_R,Bp_Lode_R+Bc_Lode_R);
+% Mode_N_L=min(Fp_Lode_L+Fc_Lode_L,Bp_Lode_L+Bc_Lode_L);
+% Mode_N = min(Mode_N_L,Mode_N_R);
+
+%% Get Martrix of integrals_S
+[~,D_O]=chebdif(N,1);
+Ww_m={};
+I = 1:N-1;
+for Lo=1:Line_L
+    D_L=(2/H_L(Lo))*D_O(:,:,1);
+    Di_L = inv(D_L(I,I));
+    Ww_m{Lo} = Di_L(1,:);
+end
+
+%%
+%K1
+for m=1:Mode_N
+    for n=1:Mode_N
+        
+        A=conj(Vis_Fpc_U_L(:,m)).*Force_Fpc_xx_L(:,n);
+        B=conj(Vis_Fpc_V_L(:,m)).*Force_Fpc_xy_L(:,n);
+        C=conj(Vis_Fpc_W_L(:,m)).*Force_Fpc_xz_L(:,n);
+
+        a=conj(Vis_Bpc_U_L(:,m)).*Force_Fpc_xx_L(:,n);
+        b=conj(Vis_Bpc_V_L(:,m)).*Force_Fpc_xy_L(:,n);
+        c=conj(Vis_Bpc_W_L(:,m)).*Force_Fpc_xz_L(:,n);
+
+        IA_All=0;IB_All=0;IC_All=0;
+        Ia_All=0;Ib_All=0;Ic_All=0;
+
+        for Lo=1:Line_L
+            IA=Ww_m{Lo}*A(( N*(Lo-1)+1 ): (Lo*N-1) );IB=Ww_m{Lo}*B(( N*(Lo-1)+1 ): (Lo*N-1) );IC=Ww_m{Lo}*C(( N*(Lo-1)+1 ): (Lo*N-1) );
+            Ia=Ww_m{Lo}*a(( N*(Lo-1)+1 ): (Lo*N-1) );Ib=Ww_m{Lo}*b(( N*(Lo-1)+1 ): (Lo*N-1) );Ic=Ww_m{Lo}*c(( N*(Lo-1)+1 ): (Lo*N-1) );
+            IA_All=IA_All+IA;IB_All=IB_All+IB;IC_All=IC_All+IC;
+            Ia_All=Ia_All+Ia;Ib_All=Ib_All+Ib;Ic_All=Ic_All+Ic;
+        end
+
+        K1(m,n)=IA_All+IB_All+IC_All;
+        K1(m+Mode_N,n)=Ia_All+Ib_All+Ic_All;
+    end
+end
+%%
+%L1
+for m=1:Mode_N
+    for n=1:Mode_N
+        
+        A=conj(Vis_Fpc_U_L(:,m)).*Force_Bpc_xx_L(:,n);
+        B=conj(Vis_Fpc_V_L(:,m)).*Force_Bpc_xy_L(:,n);
+        C=conj(Vis_Fpc_W_L(:,m)).*Force_Bpc_xz_L(:,n);
+
+        a=conj(Vis_Bpc_U_L(:,m)).*Force_Bpc_xx_L(:,n);
+        b=conj(Vis_Bpc_V_L(:,m)).*Force_Bpc_xy_L(:,n);
+        c=conj(Vis_Bpc_W_L(:,m)).*Force_Bpc_xz_L(:,n);
+
+
+        IA_All=0;IB_All=0;IC_All=0;
+        Ia_All=0;Ib_All=0;Ic_All=0;
+
+        for Lo=1:Line_L
+            IA=Ww_m{Lo}*A(( N*(Lo-1)+1 ): (Lo*N-1) );IB=Ww_m{Lo}*B(( N*(Lo-1)+1 ): (Lo*N-1) );IC=Ww_m{Lo}*C(( N*(Lo-1)+1 ): (Lo*N-1) );
+            Ia=Ww_m{Lo}*a(( N*(Lo-1)+1 ): (Lo*N-1) );Ib=Ww_m{Lo}*b(( N*(Lo-1)+1 ): (Lo*N-1) );Ic=Ww_m{Lo}*c(( N*(Lo-1)+1 ): (Lo*N-1) );
+            IA_All=IA_All+IA;IB_All=IB_All+IB;IC_All=IC_All+IC;
+            Ia_All=Ia_All+Ia;Ib_All=Ib_All+Ib;Ic_All=Ic_All+Ic;
+        end
+
+        L1(m,n)=IA_All+IB_All+IC_All;
+        L1(m+Mode_N,n)=Ia_All+Ib_All+Ic_All;
+
+    end
+end
+%%
+%K2
+for m=1:Mode_N
+    for n=1:Mode_N
+        
+        A=conj(Vis_Fpc_U_L(:,m)).*Force_Fpc_xx_R(:,n);
+        B=conj(Vis_Fpc_V_L(:,m)).*Force_Fpc_xy_R(:,n);
+        C=conj(Vis_Fpc_W_L(:,m)).*Force_Fpc_xz_R(:,n);
+
+        a=conj(Vis_Bpc_U_L(:,m)).*Force_Fpc_xx_R(:,n);
+        b=conj(Vis_Bpc_V_L(:,m)).*Force_Fpc_xy_R(:,n);
+        c=conj(Vis_Bpc_W_L(:,m)).*Force_Fpc_xz_R(:,n);
+
+        IA_All=0;IB_All=0;IC_All=0;
+        Ia_All=0;Ib_All=0;Ic_All=0;
+
+        for Lo=1:Line_L
+            IA=Ww_m{Lo}*A(( N*(Lo-1)+1 ): (Lo*N-1) );IB=Ww_m{Lo}*B(( N*(Lo-1)+1 ): (Lo*N-1) );IC=Ww_m{Lo}*C(( N*(Lo-1)+1 ): (Lo*N-1) );
+            Ia=Ww_m{Lo}*a(( N*(Lo-1)+1 ): (Lo*N-1) );Ib=Ww_m{Lo}*b(( N*(Lo-1)+1 ): (Lo*N-1) );Ic=Ww_m{Lo}*c(( N*(Lo-1)+1 ): (Lo*N-1) );
+            IA_All=IA_All+IA;IB_All=IB_All+IB;IC_All=IC_All+IC;
+            Ia_All=Ia_All+Ia;Ib_All=Ib_All+Ib;Ic_All=Ic_All+Ic;
+        end
+
+        K2(m,n)=IA_All+IB_All+IC_All;
+        K2(m+Mode_N,n)=Ia_All+Ib_All+Ic_All;
+
+    end
+end
+%%
+%L2
+for m=1:Mode_N
+    for n=1:Mode_N
+        
+        
+        A=conj(Vis_Fpc_U_L(:,m)).*Force_Bpc_xx_R(:,n);
+        B=conj(Vis_Fpc_V_L(:,m)).*Force_Bpc_xy_R(:,n);
+        C=conj(Vis_Fpc_W_L(:,m)).*Force_Bpc_xz_R(:,n);
+
+        a=conj(Vis_Bpc_U_L(:,m)).*Force_Bpc_xx_R(:,n);
+        b=conj(Vis_Bpc_V_L(:,m)).*Force_Bpc_xy_R(:,n);
+        c=conj(Vis_Bpc_W_L(:,m)).*Force_Bpc_xz_R(:,n);
+
+        IA_All=0;IB_All=0;IC_All=0;
+        Ia_All=0;Ib_All=0;Ic_All=0;
+
+        for Lo=1:Line_L
+            IA=Ww_m{Lo}*A(( N*(Lo-1)+1 ): (Lo*N-1) );IB=Ww_m{Lo}*B(( N*(Lo-1)+1 ): (Lo*N-1) );IC=Ww_m{Lo}*C(( N*(Lo-1)+1 ): (Lo*N-1) );
+            Ia=Ww_m{Lo}*a(( N*(Lo-1)+1 ): (Lo*N-1) );Ib=Ww_m{Lo}*b(( N*(Lo-1)+1 ): (Lo*N-1) );Ic=Ww_m{Lo}*c(( N*(Lo-1)+1 ): (Lo*N-1) );
+            IA_All=IA_All+IA;IB_All=IB_All+IB;IC_All=IC_All+IC;
+            Ia_All=Ia_All+Ia;Ib_All=Ib_All+Ib;Ic_All=Ic_All+Ic;
+        end
+
+        L2(m,n)=IA_All+IB_All+IC_All;
+        L2(m+Mode_N,n)=Ia_All+Ib_All+Ic_All;
+
+    end
+end
+%%
+%K3
+for n=1:Mode_N
+    for m=1:Mode_N
+        
+        
+        A=Vis_Fpc_U_L(:,m).*conj(Force_Fpc_xx_R(:,n));
+        B=Vis_Fpc_V_L(:,m).*conj(Force_Fpc_xy_R(:,n));
+        C=Vis_Fpc_W_L(:,m).*conj(Force_Fpc_xz_R(:,n));
+
+        a=Vis_Fpc_U_L(:,m).*conj(Force_Bpc_xx_R(:,n));
+        b=Vis_Fpc_V_L(:,m).*conj(Force_Bpc_xy_R(:,n));
+        c=Vis_Fpc_W_L(:,m).*conj(Force_Bpc_xz_R(:,n));
+
+        IA_All=0;IB_All=0;IC_All=0;
+        Ia_All=0;Ib_All=0;Ic_All=0;
+
+        for Lo=1:Line_L
+            IA=Ww_m{Lo}*A(( N*(Lo-1)+1 ): (Lo*N-1) );IB=Ww_m{Lo}*B(( N*(Lo-1)+1 ): (Lo*N-1) );IC=Ww_m{Lo}*C(( N*(Lo-1)+1 ): (Lo*N-1) );
+            Ia=Ww_m{Lo}*a(( N*(Lo-1)+1 ): (Lo*N-1) );Ib=Ww_m{Lo}*b(( N*(Lo-1)+1 ): (Lo*N-1) );Ic=Ww_m{Lo}*c(( N*(Lo-1)+1 ): (Lo*N-1) );
+            IA_All=IA_All+IA;IB_All=IB_All+IB;IC_All=IC_All+IC;
+            Ia_All=Ia_All+Ia;Ib_All=Ib_All+Ib;Ic_All=Ic_All+Ic;
+        end
+
+        K3(n,m)=IA_All+IB_All+IC_All;
+        K3(n+Mode_N,m)=Ia_All+Ib_All+Ic_All;
+
+    end
+end
+%%
+%L3        
+for n=1:Mode_N
+    for m=1:Mode_N
+        
+        
+        A=Vis_Bpc_U_L(:,m).*conj(Force_Fpc_xx_R(:,n));
+        B=Vis_Bpc_V_L(:,m).*conj(Force_Fpc_xy_R(:,n));
+        C=Vis_Bpc_W_L(:,m).*conj(Force_Fpc_xz_R(:,n));
+
+        a=Vis_Bpc_U_L(:,m).*conj(Force_Bpc_xx_R(:,n));
+        b=Vis_Bpc_V_L(:,m).*conj(Force_Bpc_xy_R(:,n));
+        c=Vis_Bpc_W_L(:,m).*conj(Force_Bpc_xz_R(:,n));
+
+        IA_All=0;IB_All=0;IC_All=0;
+        Ia_All=0;Ib_All=0;Ic_All=0;
+
+        for Lo=1:Line_L
+            IA=Ww_m{Lo}*A(( N*(Lo-1)+1 ): (Lo*N-1) );IB=Ww_m{Lo}*B(( N*(Lo-1)+1 ): (Lo*N-1) );IC=Ww_m{Lo}*C(( N*(Lo-1)+1 ): (Lo*N-1) );
+            Ia=Ww_m{Lo}*a(( N*(Lo-1)+1 ): (Lo*N-1) );Ib=Ww_m{Lo}*b(( N*(Lo-1)+1 ): (Lo*N-1) );Ic=Ww_m{Lo}*c(( N*(Lo-1)+1 ): (Lo*N-1) );
+            IA_All=IA_All+IA;IB_All=IB_All+IB;IC_All=IC_All+IC;
+            Ia_All=Ia_All+Ia;Ib_All=Ib_All+Ib;Ic_All=Ic_All+Ic;
+        end
+
+        L3(n,m)=IA_All+IB_All+IC_All;
+        L3(n+Mode_N,m)=Ia_All+Ib_All+Ic_All;
+
+    end
+end
+%%
+%K4             
+for n=1:Mode_N
+    for m=1:Mode_N
+        
+        
+        A=Vis_Fpc_U_R(:,m).*conj(Force_Fpc_xx_R(:,n));
+        B=Vis_Fpc_V_R(:,m).*conj(Force_Fpc_xy_R(:,n));
+        C=Vis_Fpc_W_R(:,m).*conj(Force_Fpc_xz_R(:,n));
+
+        a=Vis_Fpc_U_R(:,m).*conj(Force_Bpc_xx_R(:,n));
+        b=Vis_Fpc_V_R(:,m).*conj(Force_Bpc_xy_R(:,n));
+        c=Vis_Fpc_W_R(:,m).*conj(Force_Bpc_xz_R(:,n));
+
+        IA_All=0;IB_All=0;IC_All=0;
+        Ia_All=0;Ib_All=0;Ic_All=0;
+
+        for Lo=1:Line_L
+            IA=Ww_m{Lo}*A(( N*(Lo-1)+1 ): (Lo*N-1) );IB=Ww_m{Lo}*B(( N*(Lo-1)+1 ): (Lo*N-1) );IC=Ww_m{Lo}*C(( N*(Lo-1)+1 ): (Lo*N-1) );
+            Ia=Ww_m{Lo}*a(( N*(Lo-1)+1 ): (Lo*N-1) );Ib=Ww_m{Lo}*b(( N*(Lo-1)+1 ): (Lo*N-1) );Ic=Ww_m{Lo}*c(( N*(Lo-1)+1 ): (Lo*N-1) );
+            IA_All=IA_All+IA;IB_All=IB_All+IB;IC_All=IC_All+IC;
+            Ia_All=Ia_All+Ia;Ib_All=Ib_All+Ib;Ic_All=Ic_All+Ic;
+        end
+
+        K4(n,m)=IA_All+IB_All+IC_All;
+        K4(n+Mode_N,m)=Ia_All+Ib_All+Ic_All;
+
+    end
+end
+%%
+%L4
+for n=1:Mode_N
+    for m=1:Mode_N
+        
+        
+        A=Vis_Bpc_U_R(:,m).*conj(Force_Fpc_xx_R(:,n));
+        B=Vis_Bpc_V_R(:,m).*conj(Force_Fpc_xy_R(:,n));
+        C=Vis_Bpc_W_R(:,m).*conj(Force_Fpc_xz_R(:,n));
+
+        a=Vis_Bpc_U_R(:,m).*conj(Force_Bpc_xx_R(:,n));
+        b=Vis_Bpc_V_R(:,m).*conj(Force_Bpc_xy_R(:,n));
+        c=Vis_Bpc_W_R(:,m).*conj(Force_Bpc_xz_R(:,n));
+
+        IA_All=0;IB_All=0;IC_All=0;
+        Ia_All=0;Ib_All=0;Ic_All=0;
+
+        for Lo=1:Line_L
+            IA=Ww_m{Lo}*A(( N*(Lo-1)+1 ): (Lo*N-1) );IB=Ww_m{Lo}*B(( N*(Lo-1)+1 ): (Lo*N-1) );IC=Ww_m{Lo}*C(( N*(Lo-1)+1 ): (Lo*N-1) );
+            Ia=Ww_m{Lo}*a(( N*(Lo-1)+1 ): (Lo*N-1) );Ib=Ww_m{Lo}*b(( N*(Lo-1)+1 ): (Lo*N-1) );Ic=Ww_m{Lo}*c(( N*(Lo-1)+1 ): (Lo*N-1) );
+            IA_All=IA_All+IA;IB_All=IB_All+IB;IC_All=IC_All+IC;
+            Ia_All=Ia_All+Ia;Ib_All=Ib_All+Ib;Ic_All=Ic_All+Ic;
+        end
+
+        L4(n,m)=IA_All+IB_All+IC_All;
+        L4(n+Mode_N,m)=Ia_All+Ib_All+Ic_All;
+
+    end
+end
+%% ------------------
+Aa=[L1 -K2;L3 -K4];
+Bb=[-K1 L2;-K3 L4];
+%% -------------------
+Sca=pinv(Aa)*Bb;    %Raw
+SCA=abs(Sca).^2;    %abs
+%% -----Raw part
+line_Part1 = 1:Mode_N;
+line_Part2 = Mode_N+1:2*Mode_N;
+
+S11_ = Sca(line_Part1,line_Part1);
+S12_ = Sca(line_Part1,line_Part2);
+
+S21_ = Sca(line_Part2,line_Part1);
+S22_ = Sca(line_Part2,line_Part2);
+%% E34
+E_Bp_L = [Ki_Bp_L;Ki_Bc_L];
+E_Fp_L = [Ki_Fp_L;Ki_Fc_L];
+
+E_Bp_R = [Ki_Bp_R;Ki_Bc_R];
+E_Fp_R = [Ki_Fp_R;Ki_Fc_R];
+
+LineOfE_Tube3 = [ -E_Bp_R(line_Part1) ; E_Fp_R(line_Part1) ];
+LineOfE_Plate2 = [ -E_Bp_L(line_Part1) ; E_Fp_L(line_Part1) ];
+
+E_diag_R{1}=diag( exp( 1i*LineOfE_Tube3(1:length(LineOfE_Tube3)*0.5)*Theta) );
+E_diag_R{2}=diag( exp( 1i*LineOfE_Tube3(length(LineOfE_Tube3)*0.5+1:length(LineOfE_Tube3))*Theta) );
+
+E_diag_L{1}=diag( exp( 1i*LineOfE_Plate2((1:length(LineOfE_Plate2)*0.5)) * Plate_Len ) );
+E_diag_L{2}=diag( exp( 1i*LineOfE_Plate2(length(LineOfE_Plate2)*0.5+1:length(LineOfE_Plate2)) * Plate_Len ) );
+
+%% Combine All
+MLine=length(Ki_Fp_L);
+SLine=length(Ki_Fp_R);
+Fin_Rcatter=zeros(MLine+SLine+1);
+
+Fin_Rcatter(1:MLine,1:MLine)=SCA(1:MLine,1:MLine);
+Fin_Rcatter(MLine+1+1:MLine+SLine+1,1:MLine)=SCA(Mode_N+1:Mode_N+SLine,1:MLine);
+Fin_Rcatter(1:MLine,MLine+1+1:MLine+SLine+1)=SCA(1:MLine,Mode_N+1:Mode_N+SLine);
+Fin_Rcatter(MLine+1+1:MLine+SLine+1,MLine+1+1:MLine+SLine+1)=SCA(Mode_N+1:Mode_N+SLine,Mode_N+1:Mode_N+SLine);
