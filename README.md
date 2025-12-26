@@ -1,6 +1,22 @@
 # guided-wave-spectral-scattering
 Fast spectral-method-based solver for guided wave dispersion and scattering  in anisotropic multilayer composite structures.
 
+The proposed framework is capable of solving guided wave scattering
+from complex reinforced structures, such as stiffeners and geometric
+discontinuities, as illustrated above.
+
+In addition, the method is not limited to local reinforced geometries.
+It can be systematically extended to guided wave analysis in
+anisotropic and multilayer plates, circumferential wave propagation
+in cylindrical structures, and plate–cylinder coupled configurations.
+
+By combining Chebyshev spectral discretization with modal matching,
+both dispersion characteristics and scattering matrices can be
+computed efficiently for a wide range of composite structures.
+
+<img width="1552" height="643" alt="image" src="https://github.com/user-attachments/assets/a0b0d221-4c35-42a2-ad00-245ee4015a18" />
+<img width="963" height="826" alt="image" src="https://github.com/user-attachments/assets/ecec38aa-c48c-4014-aa96-d2764b670ee4" />
+
 # Guided Wave Spectral Scattering
 
 This repository provides a spectral-method-based framework for solving
